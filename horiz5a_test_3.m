@@ -2,6 +2,10 @@
 clear all
 close all
 
+
+mrstPath reregister geothermal 'C:\Users\alexamin\Dropbox (UiO)\BaiaMare\fem3d\mrst-2022a\modules\mrst-geothermal'
+
+
 addpath('')
 mrstModule add incomp linearsolvers mrst-gui ad-props  ad-core 
 mrstModule add upr
@@ -110,6 +114,7 @@ outbnd = [H1(:,1), H1(:,2); Moho_x, Moho_y; H1(1,1), H1(1,2)];
 surf = {H2, H3, Intr1, Intr2};
 fault  = {Fault};
 
+
 %% Generate Pebi grid
 rng('default')
 n   = 20; % Approximate number of cells in x-direction
@@ -150,8 +155,9 @@ sed1_outbnd  = [H1(:,1), H1(:,2); H2_x, H2_y; H1(1,1), H1(1,2)];
 sed2_outbnd  = [H2(:,1), H2(:,2); H3_x, H3_y; H2(1,1), H2(1,2)];
 crus_outbnd = [H3(:,1), H3(:,2); Moho_x, Moho_y; H3(1,1), H3(1,2)];
 fault       = find(G2D.cells.tag==1);
-% id_f        = find(G.cells.centroids(fault,1)>20000); 
-% fault       = fault(id_f);
+
+id_f        = find(G.cells.centroids(fault)>10000); 
+fault       = fault(id_f);
 
 sed1_cell    = inpolygon(G.cells.centroids(:,1), ...
     G.cells.centroids(:,2), sed1_outbnd(:,1), sed1_outbnd(:,2));
@@ -273,7 +279,18 @@ model = GeothermalModel(G, rock, fluid);
 model.minimumTemperature = TMin;
 model.maximumTemperature = TMax;
 model.maximumPressure    = pMax;
-model.radiogenicHeatFluxDensity = 10*(micro*watt/meter^3);%radiogenic sources
+%model.radiogenicHeatFluxDensity = 10*(micro*watt/meter^3);%radiogenic sources
+model.radiogenicHeatFluxDensity = ones(G.cells.num, 1)*10*(micro*watt/meter^3);%radiogenic sources
+model.radiogenicHeatFluxDensity(sed1_cell) = 1*(micro*watt/meter^3);%radiogenic sources 
+model.radiogenicHeatFluxDensity(sed2_cell) = 1*(micro*watt/meter^3);%radiogenic sources  
+model.radiogenicHeatFluxDensity(fault) = 1*(micro*watt/meter^3);%radiogenic sources 
+model.radiogenicHeatFluxDensity(intr1_cell) = .1*(micro*watt/meter^3);%radiogenic sources 
+model.radiogenicHeatFluxDensity(intr2_cell) = .1*(micro*watt/meter^3);%radiogenic sources 
+%
+figure
+plotCellData(G, model.radiogenicHeatFluxDensity), axis equal, axis tight
+colorbar
+
 
 %% Set up boundary conditions
 Tsurf  = K0+20;
@@ -346,16 +363,17 @@ for i=1:length(timesteps)
          hold on
         velocity = faceFlux2cellVelocity(G, states{i}.flux);
         quiver(G.cells.centroids(1:3:end,1),G.cells.centroids(1:3:end,2),...
-        velocity(1:3:end,1),velocity(1:3:end,2),2,'k')
+        velocity(1:3:end,1),velocity(1:3:end,2),4,'k')
         title(['dt=',num2str(dt/(365*24*3600*1e6)),' my'])
         %caxis([270 350 ])
         colorbar, axis tight, shading faceted
         colormap(parula(32))
-        pause(1)
+        pause(.1)
         xlabel('Distance (m)'), ylabel('Depth (m)')
-        drawnow
+        ylim([-12000 2000])
         set(gcf,'Units', 'normalized', 'Position', [ 0.1 0.1 0.7 0.6])
-        %print('-dpng','-r300',[outfolder,'res',num2str(i)])
+        drawnow
+        %print('-dpng','-r300',[outfolder,'res_noRA_',num2str(i)])
     end
     
     dt = dt + timesteps(i);
@@ -385,16 +403,23 @@ for i=1:length(timesteps)
         title(['dt=',num2str(dt/(365*24*3600*1e6)),' m.y.'])
         hold on
         velocity = faceFlux2cellVelocity(G, states{i}.flux);
-        quiver(G.cells.centroids(1:3:end,1),G.cells.centroids(1:3:end,2),...
-        velocity(1:3:end,1),velocity(1:3:end,2),2,'k')
         colorbar
         colormap(parula(32))
+        plot(H1(:,1), H1(:,2),'-r','LineWidth',1.5)
+        plot(H2(:,1), H2(:,2),'-r','LineWidth',1.5)
+        plot(H3(:,1), H3(:,2),'-r','LineWidth',1.5)
+        plot(Moho(:,1), Moho(:,2),'-r','LineWidth',1.5)
+        plot(Fault(:,1), Fault(:,2),'-r','LineWidth',1.5)
+        plot(Intr1(:,1), Intr1(:,2),'-r','LineWidth',1.5)
+        plot(Intr2(:,1), Intr2(:,2),'-r','LineWidth',1.5)
+                quiver(G.cells.centroids(1:3:end,1),G.cells.centroids(1:3:end,2),...
+        velocity(1:3:end,1),velocity(1:3:end,2),10,'k')
         %caxis([270 350])
-        pause(0.5)
-        xlabel('Distance (m)'), ylabel('Depth (m)')
+        %pause(0.1)
+        xlabel('Distance (m)'), ylabel('Depth (m)'), ylim([-12000 2000])
         drawnow
         set(gcf,'Units', 'normalized', 'Position', [ 0.1 0.1 0.8 0.5])
-        %print('-dpng','-r300',['out',num2str(i)])
+         print('-dpng','-r300',[outfolder,'res_sye_',num2str(i)])
         
     end
       

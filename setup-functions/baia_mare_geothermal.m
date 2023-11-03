@@ -37,7 +37,7 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
     %---------------------------------------------------------------------%
     % Module dependencies
     require ad-core ad-props geothermal compositional upr
-    dataPath = fullfile(mrstPath('baia-mare'), 'data');
+    dataPath = fullfile(mrstPath('baia-mare'));
     % Set gravity in the neagtive y-direction
     gravity reset on
     gravity([0, -9.81]);
@@ -45,12 +45,13 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
     % Get or construct grid
     %---------------------------------------------------------------------%
     G = [];
-    if options.readGridFromDisk && exist(fullfile(dataPath, 'grid.mat'), 'file')
-        data = load(fullfile(dataPath, 'grid.mat'));
+    if options.readGridFromDisk && exist(fullfile(dataPath, 'G_new.mat'), 'file')
+        data = load(fullfile(dataPath, 'G_new.mat'));
         G = data.G;
     else
-        G = makeBaiaMareGrid(options.gridOpts{:});
-        save(fullfile(dataPath, 'grid.mat'), 'G');
+%         G = makeBaiaMareGrid(options.gridOpts{:});
+%         save(fullfile(dataPath, 'grid.mat'), 'G');
+        error('Grid missing');
     end
     %---------------------------------------------------------------------%
     

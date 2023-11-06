@@ -299,10 +299,10 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
     T0_lin    = dTdz*dZ+ Tsurf;
 
     % @@ Need bm_geotherm!
-%     [T1_ra,T1_ra_adv] = bm_geotherm(dZ);
-%     T0 = T1_ra_adv+K0;
+    [T1_ra,T1_ra_adv] = bm_geotherm(dZ);
+    T0 = T1_ra_adv+K0;
     
-    T0 = T0_lin;
+%     T0 = T0_lin;
     
     %GeolPr = load('slice5A');
     %

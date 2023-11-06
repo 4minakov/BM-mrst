@@ -3,6 +3,7 @@ mrstModule add test-suite
 mrstModule add ad-core ad-props compositional
 mrstModule add geothermal
 mrstModule add upr
+mrstModule add optimization
 mrstModule add mrst-gui
 
 mrstVerbose on
@@ -15,7 +16,7 @@ setup.plot();
 
 %% Set up and simulate problem
 problem = setup.getPackedSimulationProblem();
-simulatePackedProblem(problem);
+simulatePackedProblem(problem, 'restartStep', nan);
 
 %% Get results
 [~, states, reports] = getPackedSimulatorOutput(problem);
@@ -45,12 +46,16 @@ for k = 1:size(config,1)
         'boxLims', config{k,4}, 'relativeLimits',config{k,5});
 end
 
-% Make handle          
+%% Model calibration
+statesRef = states;
+pvec = getScaledParameterVector(setup, parameters);
 mismatchFn = @(model, states, schedule, states_ref, compDer, tstep, state) ...
-    matchObservedOW(model, states, schedule, states_ref,...
-                   'computePartials', compDer, 'tstep', tstep, weighting{:},...
-                   'state', state, 'from_states', false);
-
+    temperatureMismatch(model, states, schedule, states_ref);
+objh2 = @(p) evaluateMatch(p, mismatchFn, setup, parameters, statesRef);
+% The calibration can be improved by taking a large number of iterations,
+% but here we set a limit of 30 iterations
+[v2, p_opt2, history2] = unitBoxBFGS(pvec, objh2, 'maxIt', 20);
+               
 %%
 FF = scatteredInterpolant;
 FF.Points = setup.model.G.cells.centroids; 

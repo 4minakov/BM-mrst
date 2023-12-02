@@ -25,8 +25,7 @@ setup.plot(states);
 %% Set up optimization problem (TBC)
 pv = setup.model.operators.pv;
 % set up 'matrix' for parameter options for easier editing. The specific
-% limits set for the various parameters influences the tuning/optimization 
-% procedure to a large extent
+% limits set for the various parameters influences the tuning/optimization % procedure to a large extent
 
 G = setup.model.G;
 pcell = G.cells.tag.crus_cell.*1 + G.cells.tag.sed1_cell.*2 + G.cells.tag.sed2_cell.*3;

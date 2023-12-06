@@ -84,6 +84,18 @@ parameters = addParameter(parameters, setup0, ...
 );
 %-------------------------------------------------------------------------%
 
+% % BCs
+% %-------------------------------------------------------------------------%
+% poroLim = [0.001, 0.8; 0.001, 0.8; 0.001, 0.8];
+% parameters = addParameter(parameters, setup0, ...
+%     'name'     , 'heatFlux'                          , ...
+%     'location' , {'control', 'bc', 'HFlux'}          , ...
+%     'belongsTo', 'schedule'                          , ...
+%     'scaling'  , 'linear'                            , ...
+%     'boxLims'  , HFluxLim                              ...
+% );
+% %-------------------------------------------------------------------------%
+
 % Get parameter vector
 pvec = getScaledParameterVector(setup0, parameters);
 
@@ -118,11 +130,15 @@ inside = cells > 0;
 cells = cells(inside);
 Tobs  = Tobs(inside);
 
+d = sqrt(sum((x(inside,:) - G.cells.centroids(cells,:)).^2, 2));
+dn = (d - min(d))./(max(d) - min(d));
+weights = exp(-dn);
+
 %% Perform model Quasi-Newton model calibration
 close all
 % Set up mismatch function
 mismatchFn = @(model, states, schedule, states_ref, compDer, tstep, state) ...
-    temperatureMismatch(model, states, schedule, Tobs, cells, ...
+    temperatureMismatch(model, states, schedule, Tobs, cells, weights, ...
     'computePartials', compDer, 'tstep', tstep, ...
         'state', state, 'from_states', false);
 objh = @(p) evaluateMatch(p, mismatchFn, setup0, parameters, []);
@@ -138,6 +154,8 @@ simulatePackedProblem(problemOpt, 'restartStep', 1);
                               
 %% Load results from tuned model
 [~, statesOpt, reports] = getPackedSimulatorOutput(problemOpt);
+% See sensitivitiesModel2D
+% sens = computeSensitivitiesAdjointAD(setupOpt, states, param, objh);
 TOpt = convertToCelcius(statesOpt{end}.T);
 
 %% Plot match

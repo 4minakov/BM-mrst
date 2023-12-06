@@ -131,11 +131,15 @@ inside = cells > 0;
 cells = cells(inside);
 Tobs  = Tobs(inside);
 
+d = sqrt(sum((x(inside,:) - G.cells.centroids(cells,:)).^2, 2));
+dn = (d - min(d))./(max(d) - min(d));
+weights = exp(-dn);
+
 %% Perform model Quasi-Newton model calibration
 close all
 % Set up mismatch function
 mismatchFn = @(model, states, schedule, states_ref, compDer, tstep, state) ...
-    temperatureMismatch(model, states, schedule, Tobs, cells, ...
+    temperatureMismatch(model, states, schedule, Tobs, cells, weights, ...
     'computePartials', compDer, 'tstep', tstep, ...
         'state', state, 'from_states', false);
 objh = @(p) evaluateMatch(p, mismatchFn, setup0, parameters, []);

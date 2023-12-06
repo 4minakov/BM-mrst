@@ -1,4 +1,4 @@
-function obj = temperatureMismatch(model, states, schedule, Tobs, cells, varargin)
+function obj = temperatureMismatch(model, states, schedule, Tobs, cells, weights, varargin)
 % Compute mismatch-function 
 
 %{
@@ -58,7 +58,7 @@ for step = 1:numSteps
     T = model.getProp(state, 'temperature');
     T = convertToCelcius(T(cells));
     
-    o = ((T-Tobs)./Tobs).^2;
+    o = (weights.*(T-Tobs)./Tobs).^2;
     
     if opt.mismatchSum, o = sum(o); end
         

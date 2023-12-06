@@ -85,6 +85,18 @@ parameters = addParameter(parameters, setup0, ...
 );
 %-------------------------------------------------------------------------%
 
+% % BCs
+% %-------------------------------------------------------------------------%
+% poroLim = [0.001, 0.8; 0.001, 0.8; 0.001, 0.8];
+% parameters = addParameter(parameters, setup0, ...
+%     'name'     , 'heatFlux'                          , ...
+%     'location' , {'control', 'bc', 'HFlux'}          , ...
+%     'belongsTo', 'schedule'                          , ...
+%     'scaling'  , 'linear'                            , ...
+%     'boxLims'  , HFluxLim                              ...
+% );
+% %-------------------------------------------------------------------------%
+
 % Get parameter vector
 pvec = getScaledParameterVector(setup0, parameters);
 
@@ -139,6 +151,8 @@ simulatePackedProblem(problemOpt, 'restartStep', 1);
                               
 %% Load results from tuned model
 [~, statesOpt, reports] = getPackedSimulatorOutput(problemOpt);
+% See sensitivitiesModel2D
+% sens = computeSensitivitiesAdjointAD(setupOpt, states, param, objh);
 TOpt = convertToCelcius(statesOpt{end}.T);
 
 %% Plot match

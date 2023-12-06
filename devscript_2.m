@@ -102,27 +102,40 @@ pvec = getScaledParameterVector(setup0, parameters);
 %% Load reference data
 % The observed temperature and the corresponding grid cells must be
 % provided to the temperatureMismatch (see below)
-data     = loadData('Wells1.mat'    ); Wells1 = data.Wells;
-data     = loadData('Wells2.mat'    ); DemWel = data.DemWel;
-data     = loadData('DemWell1-6.mat'); DemWelTVal = data;
+% data     = loadData('Wells1.mat'    ); Wells1 = data.Wells;
+% data     = loadData('Wells2.mat'    ); DemWel = data.DemWel;
+% data     = loadData('DemWell1-6.mat'); DemWelTVal = data;
+% 
+%include = {'X3 -Cavnic', '125-VRO', '126-ROT'};
+%keep = ismember(wells1.Site, include);
+% 
+% Wells1 = Wells1(keep,:);
+% 
+% Tobs = [Wells1.zo, Wells1.z1000, Wells1.z2000, Wells1.z2500];
+% Tobs0 = Tobs;
+% ztop = Wells1.Elevation;
+% z    = ztop -[0 1000 2000 2500];
+% z0   = z;
+% 
+% x = repmat(Wells1.profdstA05, 1, 4);
+% 
+% Tobs = reshape(Tobs', [], 1);
+% x    = reshape(x', [], 1);
+% z    = reshape(z', [], 1);
+% x    = [x,z]
 
-include = {'X3 -Cavnic', '125-VRO', '126-ROT'};
-keep = ismember(Wells1.Var3, include);
+%%
+load BM-wells
+nwells = size(wells,2);
+x = [];
+Tobs = [];
+for k = 1:nwells
+   nzw = size(wells(k).z,1);
+   x = [x; [repmat(wells(k).dist,nzw,1), wells(k).z] ];
+   Tobs = [Tobs; wells(k).T];
+end
+%%
 
-Wells1 = Wells1(keep,:);
-
-Tobs = [Wells1.zo, Wells1.z1000, Wells1.z2000, Wells1.z2500];
-Tobs0 = Tobs;
-ztop = Wells1.Elevation;
-z    = ztop -[0 1000 2000 2500];
-z0   = z;
-
-x = repmat(Wells1.profdstA05, 1, 4);
-
-Tobs = reshape(Tobs', [], 1);
-x    = reshape(x', [], 1);
-z    = reshape(z', [], 1);
-x    = [x,z];
 cells = findEnclosingCell(setup.model.G, x);
 % Only match againts values measured inside simulation grid
 inside = cells > 0;
@@ -130,7 +143,13 @@ inside = cells > 0;
 cells = cells(inside);
 Tobs  = Tobs(inside);
 
-d = sqrt(sum((x(inside,:) - G.cells.centroids(cells,:)).^2, 2));
+% d = sqrt(sum((x(inside,:) - G.cells.centroids(cells,:)).^2, 2));
+
+d = [];
+for i = 1:nwells
+ d = [d; repmat(wells(i).offset,nzw,1)];
+end
+
 dn = (d - min(d))./(max(d) - min(d));
 weights = exp(-dn);
 
@@ -163,21 +182,25 @@ close all
 fg = setup.figure();
 plotGrid(setup.model.G); setup.setAxisProperties(gca), hold on,
 
-colors = lines(numel(include));
-for i = 1:numel(include)
-    
+% colors = lines(numel(include));
+colors = lines(nwells);
+%for i = 1:numel(include)
+for i = 1:nwells    
     color = colors(i,:);
     figure(fg),
-    plot(Wells1.profdstA05(i), Wells1.Elevation(i), ...
+    plot(wells(i).dist, wells(i).Elevation, ...
         'v', 'MarkerFaceColor', color, 'MarkerEdgeColor', 'k', 'MarkerSize', 10)
-    text(Wells1.profdstA05(i), Wells1.Elevation(i), Wells1.Var3{i})
+    text(wells(i).dist, wells(i).Elevation, wells(i).site)
     
     ft = figure(); hold on
-    To = Tobs0(i,:);
-    z  = z0(i,:);
+%     To = Tobs0(i,:);
+%     z  = z0(i,:);
+    To = wells(i).T;
+    z  = wells(i).z;
+    
     plot(To, z, 'o', 'Color', color, 'LineWidth', 2);
 
-    x = Wells1.profdstA05(i);
+    x = wells(i).dist;
     n = 25;
     t = linspace(0,1,n)';    
     x = interp1([0,1]', [x,z(1); x, z(end)], t);
